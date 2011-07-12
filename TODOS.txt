@@ -1,0 +1,15 @@
+=====
+TODOS
+=====
+
+Tests
+-----
+
+Write tests for the helper methods.
+
+Improvements
+-----
+
+There might be a better way to get all modules from a django app and I do it way to complicated, but it works and for the moment that is all I need.
+
+Possibility to write coverage report to a file if running the test with 'nohup' isn't good enough.

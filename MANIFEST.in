@@ -1,0 +1,7 @@
+include AUTHOR.txt
+include CHANGES.txt
+include LICENSE.txt
+include README.txt
+include TODOS.txt
+include setup.py
+recursive-include src/django-test-coverage *
