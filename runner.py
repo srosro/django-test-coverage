@@ -56,7 +56,6 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
                 label = label.split('.')[0] #remove test class or test method from label
                 pkg = _get_app_package(label)
                 modules.extend(_package_modules(*pkg))
-
         coverage.report(modules, show_missing=1)
 
     return retval
@@ -86,7 +85,7 @@ def _package_modules(pkg, impstr):
             continue
         if os.path.isfile(path + os.sep + f):
             name, ext = os.path.splitext(f)
-            if ext != '.py':
+            if ext != '.py' or name == 'admin':
                 continue
             #python module
             modules.append(__import__(impstr + '.' + name, {}, {}, ['']))
