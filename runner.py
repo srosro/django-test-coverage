@@ -45,7 +45,7 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
         print ' Unit Test Code Coverage Results'
         print '----------------------------------------------------------------------'
 
-	# try to import all modules for the coverage report.
+        # try to import all modules for the coverage report.
         modules = []
         if getattr(settings, 'COVERAGE_MODULES', None):
             modules = [__import__(module, {}, {}, ['']) for module in settings.COVERAGE_MODULES]
