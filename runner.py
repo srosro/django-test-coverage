@@ -28,7 +28,9 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
 
     Returns number of tests that failed.
     """
-    do_coverage = hasattr(settings, 'COVERAGE_MODULES') or bool(test_labels)
+    do_coverage = (hasattr(settings, 'COVERAGE_MODULES') or 
+                   hasattr(settings, 'COVERAGE_APPS') or
+                   bool(test_labels))
     if do_coverage:
         coverage.erase()
         coverage.start()
@@ -47,15 +49,17 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
 
         # try to import all modules for the coverage report.
         modules = []
-        if getattr(settings, 'COVERAGE_MODULES', None):
-            modules = [__import__(module, {}, {}, ['']) for module in settings.COVERAGE_MODULES]
-
-        elif test_labels:
-            modules = []
-            for label in test_labels:
+        if test_labels or hasattr(settings, 'COVERAGE_APPS'):
+            # apps entered at the command line prompt override those specified in settings
+            labels = test_labels or settings.COVERAGE_APPS
+            for label in labels:
                 label = label.split('.')[0] #remove test class or test method from label
                 pkg = _get_app_package(label)
                 modules.extend(_package_modules(*pkg))
+        
+        elif hasattr(settings, 'COVERAGE_MODULES'):
+            modules = [__import__(module, {}, {}, ['']) for module in settings.COVERAGE_MODULES]
+
         coverage.report(modules, show_missing=1)
 
     return retval
