@@ -28,7 +28,7 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
 
     Returns number of tests that failed.
     """
-    do_coverage = (hasattr(settings, 'COVERAGE_MODULES') or 
+    do_coverage = (hasattr(settings, 'COVERAGE_MODULES') or
                    hasattr(settings, 'COVERAGE_APPS') or
                    bool(test_labels))
     if do_coverage:
@@ -56,10 +56,8 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
                 label = label.split('.')[0] #remove test class or test method from label
                 pkg = _get_app_package(label)
                 modules.extend(_package_modules(*pkg))
-        
         elif hasattr(settings, 'COVERAGE_MODULES'):
             modules = [__import__(module, {}, {}, ['']) for module in settings.COVERAGE_MODULES]
-
         coverage.report(modules, show_missing=1)
 
     return retval
@@ -69,7 +67,13 @@ def _get_app_package(label):
     imp, app = [], get_app(label)
     path = os.path.dirname(app.__file__)
     path_list = path.split(os.sep)
+    if path_list[-1] == 'models':
+        #Models are in a subdirectory, named models.
+        #We need to pop this off so that we'll import
+        #everything starting at the parent directory.
+        path_list.pop()
     path_list.reverse()
+
     for p in path_list:
         imp.insert(0, p)
         try:
