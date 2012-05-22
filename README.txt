@@ -12,8 +12,13 @@ Usage
 -----
 
 Simple add the line
-
-    TEST_RUNNER = 'django-test-coverage.runner.run_tests'
+	
+	Django 1.3 and earlier:
+	TEST_RUNNER = 'django-test-coverage.runner.run_tests'
+	
+	Django 1.4:
+	TEST_RUNNER = 'django_test_coverage.runner.CoverageTestSuiteRunner'
+	
 
 to your django settings file. If you run the test with
 

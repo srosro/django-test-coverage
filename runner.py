@@ -6,7 +6,7 @@ from django.conf import settings
 
 import coverage
 
-def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
+def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_tests=[]):
     """
     Run the unit tests for all the test labels in the provided list.
     Labels must be of the form:
@@ -28,6 +28,7 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
 
     Returns number of tests that failed.
     """
+
     do_coverage = (hasattr(settings, 'COVERAGE_MODULES') or
                    hasattr(settings, 'COVERAGE_APPS') or
                    bool(test_labels))
@@ -35,8 +36,13 @@ def run_tests(test_labels, verbosity=1, interactive=True, extra_tests=[]):
         coverage.erase()
         coverage.start()
 
-    from django.test import simple
-    retval = simple.run_tests(test_labels, verbosity, interactive, extra_tests)
+    try:
+        from django.test.simple import DjangoTestSuiteRunner
+        testrunner = DjangoTestSuiteRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
+        retval = testrunner.run_tests(test_labels, extra_tests)
+    except ImportError:
+        from django.test import simple
+        retval = simple.run_tests(test_labels, verbosity, interactive, extra_tests)
 
     if do_coverage:
         coverage.stop()
@@ -106,3 +112,13 @@ def _package_modules(pkg, impstr):
             except ImportError:
                 pass
     return modules
+
+class CoverageTestSuiteRunner(object):
+    def __init__(self, verbosity=1, interactive=True, failfast=False, **kwargs):
+        self.verbosity = verbosity
+        self.interactive = interactive
+        self.failfast = failfast
+
+    def run_tests(self, test_labels, extra_tests=None, **kwargs):
+        print "running tests"
+        run_tests(test_labels, verbosity=self.verbosity, interactive=self.interactive,  failfast=self.failfast, extra_tests=None)
