@@ -35,13 +35,17 @@ def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_
     if do_coverage:
         coverage.erase()
         coverage.start()
-
+    
+    DjangoTestSuiteRunner = None
     try:
         from django.test.simple import DjangoTestSuiteRunner
-        testrunner = DjangoTestSuiteRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
-        retval = testrunner.run_tests(test_labels, extra_tests)
     except ImportError:
         from django.test import simple
+    
+    if DjangoTestSuiteRunner:
+        testrunner = DjangoTestSuiteRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
+        retval = testrunner.run_tests(test_labels, extra_tests)
+    else:
         retval = simple.run_tests(test_labels, verbosity, interactive, extra_tests)
 
     if do_coverage:
