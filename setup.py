@@ -23,7 +23,7 @@ setup(
         'Topic :: Software Development :: Testing',
     ],
     keywords='django,test,coverage,fork',
-    url='http://github.com/srosro/django-test-coverage'
+    url='http://github.com/srosro/django-test-coverage',
     license='MIT',
     packages=['django_test_coverage'],
     install_requires=['coverage'],
