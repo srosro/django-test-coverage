@@ -28,7 +28,11 @@ the test runner will evaluate all modules in the app *zoo* and add them to the c
 
     COVERAGE_MODULES = ('zoo.baer', 'zoo.lion')
 
-to your settings file. In this example *zoo* should be replaced with your application name and *baer/lion* with your module included in the reported.
+to your settings file. In this example *zoo* should be replaced with your application name and *baer/lion* with your module included in the reported.  Modules can be ignored with
+
+    COVERAGE_EXCLUDE_MODULES = ('zoo.tests',)
+
+This will exclude *zoo.tests* and all its submodules from the coverage statistics.
 
 You can also specify a set of apps to test. This option performs in a similar manner to specifying specific apps on the command line, but here you can specify a default set of apps to test in the settings file. To specify a set of apps, add the line
 
