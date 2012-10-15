@@ -181,6 +181,16 @@ def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_
         elif hasattr(settings, 'COVERAGE_MODULES'):
             modules = [__import__(module, {}, {}, ['']) for module in settings.COVERAGE_MODULES]
 
+
+        if hasattr(settings, 'COVERAGE_EXCLUDE_MODULES'):
+            for exclude_module_name in settings.COVERAGE_EXCLUDE_MODULES:
+                # Test designed to avoid accidentally removing a module whose
+                # name is prefixed by an excluded module name, but still remove
+                # submodules
+                modules = [module for module in modules
+                    if not module.__name__ == exclude_module_name and
+                    not module.__name__.startswith(exclude_module_name + '.')]
+
         cov_reporter(cov, modules)
 
     return retval
