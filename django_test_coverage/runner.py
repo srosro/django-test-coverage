@@ -1,11 +1,116 @@
 # -*- coding: utf-8 -*-
+import sys
 import os
+import webbrowser
+from os.path import exists, isdir, abspath, join
 
 from django.db.models import get_app
 from django.conf import settings
 
-import coverage
+from coverage import coverage
 
+__valid_browser_open_types = {
+    'existing': 0,
+    'window': 1,
+}
+
+if sys.version_info >= '2.5':
+    #2 is only available starting from 2.5
+    __valid_browser_open_types['tab'] = 2
+
+__valid_browser_open_types_str = ', '.join(__valid_browser_open_types.keys())
+
+### coverage reporters ###
+def reporter_console(cov, modules):
+    """
+    Generates a report to stdout
+    """
+    # Print code metrics header
+    print ''
+    print '----------------------------------------------------------------------'
+    print ' Unit Test Code Coverage Results'
+    print '----------------------------------------------------------------------'
+
+    cov.report(modules, show_missing=1)
+
+def reporter_xml(cov, modules):
+    """
+    Generates an xml report
+
+    The following values from django's settings are used:
+
+    COVERAGE_XML_FILE: Specifies the output path or outputs to coverage.xml if
+                       not specified.
+    """
+    #if None, just outputs to stdout
+    outfile = getattr(settings, 'COVERAGE_XML_FILE', None)
+    print 'Writing XML report'
+    cov.xml_report(modules, outfile)
+    print 'Done'
+
+def reporter_html(cov, modules):
+    """
+    Generates a html report
+
+    The following values from django's settings are used:
+
+    COVERAGE_HTML_DIRECTORY: Directory to output html to; defaults to covhtml
+                             in the current directory. If the directory doesn't
+                             exist it'll be created.
+    COVERAGE_HTML_EXTRA_CSS: An extra css file that coverage'll copy into the
+                             output directory if given; defaults to None.
+    COVERAGE_HTML_OPEN_IN_BROWSER: Whether or not to open the index file after
+                                   generation. Uses the webbrowser module to do
+                                   so. Default is False.
+    COVERAGE_HTML_BROWSER_OPEN_TYPE: If COVERAGE_HTML_OPEN_IN_BROWSER is True,
+                                     then this dictates how the open is done.
+                                     Possible values are 'existing' (use
+                                     existing browser window), 'new' (try and
+                                     open a new browser), or 'tab' (python >=
+                                     2.5 only; attempts to open in a new tab).
+                                     See
+                                     http://docs.python.org/library/webbrowser.html#webbrowser.open
+                                     for details.
+    """
+    open_in_browser = getattr(settings, 'COVERAGE_HTML_OPEN_IN_BROWSER', False)
+    covdir = abspath(getattr(settings, 'COVERAGE_HTML_DIRECTORY', 'covhtml'))
+    extra_css = getattr(settings, 'COVERAGE_HTML_EXTRA_CSS', None)
+    open_type = getattr(settings, 'COVERAGE_HTML_BROWSER_OPEN_TYPE', 'existing')
+    open_type = __valid_browser_open_types.get(open_type)
+    if open_type is None:
+        print '%s is not a valid value for COVERAGE_HTML_BROWSER_OPEN_TYPE; valid values: %s' % (open_type,
+                                                                                                 __valid_browser_open_types_str)
+        open_in_browser = False
+
+    if not exists(covdir):
+        print "COVERAGE_HTML_DIRECTORY (%s) doesn't exist; creating" % covdir
+        os.mkdir(covdir)
+    else:
+        if not isdir(covdir):
+            print 'Not writing HTML report; COVERAGE_HTML_DIRECTORY (%s) points to a non-directory' % covdir
+            return
+        elif not os.access(covdir, os.W_OK):
+            print "Not writing HMTL report; COVERAGE_HTML_DIRECTORY (%s) isn't writable" % covdir
+            return
+
+    print 'Writing html report'
+    cov.html_report(modules, extra_css=extra_css, directory=covdir)
+    print 'Done'
+    if open_in_browser:
+        #XXX will this work in windows since it uses \ as a separator?
+        if not webbrowser.open('file://%s' % join(covdir, 'index.html'),
+                               new=open_type):
+            print 'Unable to open coverage index in webbrowser'
+
+__cov_reporters = {
+    'console': reporter_console,
+    'html': reporter_html,
+    'xml': reporter_xml,
+}
+
+__valid_covtypes_str = ', '.join(__cov_reporters.keys())
+
+### test runner ###
 def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_tests=[]):
     """
     Run the unit tests for all the test labels in the provided list.
@@ -26,22 +131,29 @@ def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_
     If the settings file has an entry for COVERAGE_MODULES or test_labels is true it will prints the
     coverage report for modules/apps
 
+    You can control coverage's output via the COVERAGE_REPORT_TYPE variable;
+    possible values are 'console' (default, output to stdout), 'html' (outputs
+    html to the directory specified by COVERAGE_HTML_DIRECTORY) or 'xml'
+    (outputs an xml file to COVERAGE_XML_FILE).
+
     Returns number of tests that failed.
     """
 
+    cov = None
     do_coverage = (hasattr(settings, 'COVERAGE_MODULES') or
                    hasattr(settings, 'COVERAGE_APPS') or
                    bool(test_labels))
     if do_coverage:
-        coverage.erase()
-        coverage.start()
-    
+        cov = coverage()
+        cov.erase()
+        cov.start()
+
     DjangoTestSuiteRunner = None
     try:
         from django.test.simple import DjangoTestSuiteRunner
     except ImportError:
         from django.test import simple
-    
+
     if DjangoTestSuiteRunner:
         testrunner = DjangoTestSuiteRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
         retval = testrunner.run_tests(test_labels, extra_tests)
@@ -49,13 +161,13 @@ def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_
         retval = simple.run_tests(test_labels, verbosity, interactive, extra_tests)
 
     if do_coverage:
-        coverage.stop()
+        cov.stop()
 
-        # Print code metrics header
-        print ''
-        print '----------------------------------------------------------------------'
-        print ' Unit Test Code Coverage Results'
-        print '----------------------------------------------------------------------'
+        covtype = getattr(settings, 'COVERAGE_REPORT_TYPE', 'console')
+        cov_reporter = __cov_reporters.get(covtype)
+        if not cov_reporter:
+            raise RuntimeError('Invalid COVERAGE_REPORT_TYPE given: %s; valid values: %s' % (covtype,
+                                                                                             __valid_covtypes_str))
 
         # try to import all modules for the coverage report.
         modules = []
@@ -68,7 +180,8 @@ def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_
                 modules.extend(_package_modules(*pkg))
         elif hasattr(settings, 'COVERAGE_MODULES'):
             modules = [__import__(module, {}, {}, ['']) for module in settings.COVERAGE_MODULES]
-        coverage.report(modules, show_missing=1)
+
+        cov_reporter(cov, modules)
 
     return retval
 
@@ -126,3 +239,5 @@ class CoverageTestSuiteRunner(object):
     def run_tests(self, test_labels, extra_tests=None, **kwargs):
         print "running tests"
         run_tests(test_labels, verbosity=self.verbosity, interactive=self.interactive,  failfast=self.failfast, extra_tests=None)
+
+__all__ = ['CoverageTestSuiteRunner', 'run_tests']
