@@ -2,6 +2,7 @@
 import sys
 import os
 import webbrowser
+import traceback
 from os.path import exists, isdir, abspath, join
 
 from django.db.models import get_app
@@ -154,11 +155,17 @@ def run_tests(test_labels, verbosity=1, interactive=True, failfast=False, extra_
     except ImportError:
         from django.test import simple
 
-    if DjangoTestSuiteRunner:
-        testrunner = DjangoTestSuiteRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
-        retval = testrunner.run_tests(test_labels, extra_tests)
-    else:
-        retval = simple.run_tests(test_labels, verbosity, interactive, extra_tests)
+    try:
+        if DjangoTestSuiteRunner:
+            testrunner = DjangoTestSuiteRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
+            retval = testrunner.run_tests(test_labels, extra_tests)
+        else:
+            retval = simple.run_tests(test_labels, verbosity, interactive, extra_tests)
+    except Exception:
+        #if we don't print the exc here, nothing'll be outputted to the terminal
+        print 'An error occured while attempting to run the tests:'
+        traceback.print_exc()
+        raise
 
     if do_coverage:
         cov.stop()
@@ -248,6 +255,6 @@ class CoverageTestSuiteRunner(object):
 
     def run_tests(self, test_labels, extra_tests=None, **kwargs):
         print "running tests"
-        run_tests(test_labels, verbosity=self.verbosity, interactive=self.interactive,  failfast=self.failfast, extra_tests=None)
+        return run_tests(test_labels, verbosity=self.verbosity, interactive=self.interactive,  failfast=self.failfast, extra_tests=None)
 
 __all__ = ['CoverageTestSuiteRunner', 'run_tests']
