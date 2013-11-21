@@ -8,15 +8,22 @@ The test runner is an extended version of the default django test runner. It add
 
 .. _Coverage: http://nedbatchelder.com/code/modules/coverage.html
 
+Update(11-20-13)
+------
+
+This version(0.2.5) supports python 3.3.x and django 1.6
+
 Usage
 -----
 
 Simple add the line
 
+    Add 'django_test_runner' to INSTALLED_APPS
+
 	Django 1.3 and earlier:
 	TEST_RUNNER = 'django_test_coverage.runner.run_tests'
 
-	Django 1.4:
+	Django 1.4 to 1.6:
 	TEST_RUNNER = 'django_test_coverage.runner.CoverageTestSuiteRunner'
 
 
