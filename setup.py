@@ -56,6 +56,11 @@ Changelog
 - Added support for specifying a default set of apps to perform coverage on
 - Misc bugfixes & cleanup
 
+0.3 (2019-09-20)
+----------------
+
+- Added Django 2.x compatibility
+
 '''
 
 setup(
