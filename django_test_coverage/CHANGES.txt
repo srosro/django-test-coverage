@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.3 (2019-09-20)
+----------------
+
+- Added Django 2.x compatibility
+
+0.2 (2019-05-05)
+----------------
+
+- Django 2.1 and Python 3.x compatibility
+
+
 0.1 (2009-03-03)
 ----------------
 
